@@ -1,44 +1,55 @@
 package com.iftm
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var et_codigo    : EditText
-    lateinit var et_nome      : EditText
-    lateinit var et_nAlunos   : EditText
-    lateinit var et_notaMEC   : EditText
-    lateinit var rg_areas     : RadioGroup
-    lateinit var bt_inserir   : Button
-    lateinit var bt_atualizar : Button
-    lateinit var bt_excluir   : Button
-    lateinit var lv_cursos    : ListView
+    lateinit var et_codigo        : EditText
+    lateinit var et_nome          : EditText
+    lateinit var et_nAlunos       : EditText
+    lateinit var et_notaMEC       : EditText
+    lateinit var rg_areas         : RadioGroup
+    lateinit var bt_inserir       : Button
+    lateinit var bt_atualizar     : Button
+    lateinit var bt_excluir       : Button
+    lateinit var lv_cursos        : ListView
+    lateinit var et_filterCodigo  : EditText
+    lateinit var ib_filterCodigo  : ImageButton
+    lateinit var bt_ordenar       : Button
+    lateinit var bt_limparFiltros : Button
+    lateinit var tv_totAlunos     : TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        et_codigo    = findViewById(R.id.et_codigo)
-        et_nome      = findViewById(R.id.et_nome)
-        et_nAlunos   = findViewById(R.id.et_nAlunos)
-        et_notaMEC   = findViewById(R.id.et_notaMEC)
-        rg_areas     = findViewById(R.id.rg_areas)
-        bt_inserir   = findViewById(R.id.bt_inserir)
-        bt_atualizar = findViewById(R.id.bt_atualizar)
-        bt_excluir   = findViewById(R.id.bt_excluir)
-        lv_cursos    = findViewById(R.id.lv_cursos)
+        et_codigo        = findViewById(R.id.et_codigo)
+        et_nome          = findViewById(R.id.et_nome)
+        et_nAlunos       = findViewById(R.id.et_nAlunos)
+        et_notaMEC       = findViewById(R.id.et_notaMEC)
+        rg_areas         = findViewById(R.id.rg_areas)
+        bt_inserir       = findViewById(R.id.bt_inserir)
+        bt_atualizar     = findViewById(R.id.bt_atualizar)
+        bt_excluir       = findViewById(R.id.bt_excluir)
+        lv_cursos        = findViewById(R.id.lv_cursos)
+        et_filterCodigo  = findViewById(R.id.et_filterCodigo)
+        ib_filterCodigo  = findViewById(R.id.ib_filterCodigo)
+        bt_ordenar       = findViewById(R.id.bt_ordenar)
+        bt_limparFiltros = findViewById(R.id.bt_limparFiltros)
+        tv_totAlunos     = findViewById(R.id.tv_totAlunos)
 
         val myDataBase = Banco(applicationContext)
         val dao        = DAO(myDataBase)
@@ -142,6 +153,40 @@ class MainActivity : AppCompatActivity() {
                 , Toast.LENGTH_LONG
             ).show()
         }
+
+        //--------------------------------------------------------------------------------------
+        ib_filterCodigo.setOnClickListener {
+            if (et_filterCodigo.text.toString().isNotEmpty()) {
+                showCursoById(dao)
+            } else {
+                Toast.makeText(
+                    applicationContext
+                    , "Informe um código para filtrar!"
+                    , Toast.LENGTH_LONG
+                ).show()
+            }
+
+        }
+
+        //--------------------------------------------------------------------------------------
+        bt_ordenar.setOnClickListener {
+            orderByTotAlunos(dao)
+            Toast.makeText(
+                applicationContext
+                , "Ordenado pelo número de Alunos."
+                , Toast.LENGTH_LONG
+            ).show()
+        }
+
+        //--------------------------------------------------------------------------------------
+        bt_limparFiltros.setOnClickListener {
+            showCursos(dao)
+            Toast.makeText(
+                applicationContext
+                , "Filtros limpos!"
+                , Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     //--------------------------------------------------------------------------------------
@@ -149,6 +194,8 @@ class MainActivity : AppCompatActivity() {
         var cursosList    = dao.getAll()
         var adapter       = ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, cursosList)
         lv_cursos.adapter = adapter
+
+        setTotAlunos(dao)
     }
 
     //--------------------------------------------------------------------------------------
@@ -201,4 +248,28 @@ class MainActivity : AppCompatActivity() {
 
         return hasArea && hasNome && hasNAlunos && hasNotaMEC
     }
-}
+
+    //--------------------------------------------------------------------------------------
+    private fun setTotAlunos(dao : DAO) {
+        val totAlunos = dao.getTotalStudents();
+
+        tv_totAlunos.setText("Total de alunos: $totAlunos")
+    }
+
+    //--------------------------------------------------------------------------------------
+    private fun showCursoById(dao : DAO) {
+        var cursosList = dao.fetchElementById(et_filterCodigo.text.toString().toInt())
+        var adapter =
+            ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, cursosList)
+        lv_cursos.adapter = adapter
+
+        et_filterCodigo.text.clear()
+    }
+
+    //--------------------------------------------------------------------------------------
+    private fun orderByTotAlunos(dao : DAO) {
+        var cursosList    =  dao.orderByNAlunos()
+        var adapter       = ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, cursosList)
+        lv_cursos.adapter = adapter
+    }
+ }
