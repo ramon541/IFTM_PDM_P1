@@ -1,13 +1,13 @@
 package com.iftm
 
 import android.content.ContentValues
-import android.util.Log
 
 class DAO(banco : Banco) {
     var banco : Banco
 
     init { this.banco = banco }
 
+    //--------------------------------------------------------------------------------------
     fun insert(curso : Curso) {
         val db       = this.banco.writableDatabase
         val cvValues = ContentValues().apply {
@@ -18,9 +18,9 @@ class DAO(banco : Banco) {
         }
 
         val res = db.insert("CURSO", null, cvValues)
-        Log.i("DataBase", "Inserção: $res")
     }
 
+    //--------------------------------------------------------------------------------------
     fun getAll() : ArrayList<Curso> {
         val cursoList = ArrayList<Curso>()
         val db        = this.banco.readableDatabase
@@ -41,6 +41,7 @@ class DAO(banco : Banco) {
         return(cursoList)
     }
 
+    //--------------------------------------------------------------------------------------
     fun update(curso : Curso) {
         val db       = this.banco.writableDatabase
         val cvValues = ContentValues().apply {
@@ -54,6 +55,7 @@ class DAO(banco : Banco) {
         db.update("CURSO", cvValues, condicao, null)
     }
 
+    //--------------------------------------------------------------------------------------
     fun delete(codigo : String) {
         val db       = this.banco.writableDatabase
         val condicao = "CODIGO = $codigo"
@@ -61,6 +63,7 @@ class DAO(banco : Banco) {
         db.delete("CURSO", condicao, null)
     }
 
+    //--------------------------------------------------------------------------------------
     fun getTotalStudents(): Int {
         val db     = this.banco.writableDatabase
         val cursor = db.rawQuery("SELECT SUM(NALUNOS) FROM CURSO", null)
@@ -75,6 +78,7 @@ class DAO(banco : Banco) {
         }
     }
 
+    //--------------------------------------------------------------------------------------
     fun fetchElementById(id: Int): ArrayList<Curso> {
         val cursoList = ArrayList<Curso>()
         val db        = this.banco.readableDatabase
@@ -95,6 +99,7 @@ class DAO(banco : Banco) {
         return(cursoList)
     }
 
+    //--------------------------------------------------------------------------------------
     fun orderByNAlunos(): ArrayList<Curso> {
         val cursoList = ArrayList<Curso>()
         val db        = this.banco.readableDatabase
@@ -113,5 +118,17 @@ class DAO(banco : Banco) {
         }
         cursor.close()
         return(cursoList)
+    }
+
+    //--------------------------------------------------------------------------------------
+    fun updateBkp(curso: Curso) {
+        val db = this.banco.writableDatabase
+
+        val sql = """
+            INSERT OR REPLACE INTO CURSO (CODIGO, NOME, NALUNOS, NOTAMEC, AREA)
+            VALUES(?, ?, ?, ?, ?)
+        """.trimIndent()
+
+        db.execSQL(sql, arrayOf(curso.codigo, curso.nome, curso.nAlunos, curso.notaMEC, curso.area))
     }
 }

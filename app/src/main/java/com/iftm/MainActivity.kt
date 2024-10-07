@@ -1,6 +1,7 @@
 package com.iftm
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -13,43 +14,50 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import java.io.File
+import java.io.FileOutputStream
+import java.io.FileWriter
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var et_codigo        : EditText
-    lateinit var et_nome          : EditText
-    lateinit var et_nAlunos       : EditText
-    lateinit var et_notaMEC       : EditText
-    lateinit var rg_areas         : RadioGroup
-    lateinit var bt_inserir       : Button
-    lateinit var bt_atualizar     : Button
-    lateinit var bt_excluir       : Button
-    lateinit var lv_cursos        : ListView
-    lateinit var et_filterCodigo  : EditText
-    lateinit var ib_filterCodigo  : ImageButton
-    lateinit var bt_ordenar       : Button
-    lateinit var bt_limparFiltros : Button
-    lateinit var tv_totAlunos     : TextView
+    lateinit var et_codigo         : EditText
+    lateinit var et_nome           : EditText
+    lateinit var et_nAlunos        : EditText
+    lateinit var et_notaMEC        : EditText
+    lateinit var rg_areas          : RadioGroup
+    lateinit var bt_inserir        : Button
+    lateinit var bt_atualizar      : Button
+    lateinit var bt_excluir        : Button
+    lateinit var lv_cursos         : ListView
+    lateinit var et_filterCodigo   : EditText
+    lateinit var ib_filterCodigo   : ImageButton
+    lateinit var bt_ordenar        : Button
+    lateinit var bt_limparFiltros  : Button
+    lateinit var tv_totAlunos      : TextView
+    lateinit var bt_criarBackup    : Button
+    lateinit var bt_carregarBackup : Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        et_codigo        = findViewById(R.id.et_codigo)
-        et_nome          = findViewById(R.id.et_nome)
-        et_nAlunos       = findViewById(R.id.et_nAlunos)
-        et_notaMEC       = findViewById(R.id.et_notaMEC)
-        rg_areas         = findViewById(R.id.rg_areas)
-        bt_inserir       = findViewById(R.id.bt_inserir)
-        bt_atualizar     = findViewById(R.id.bt_atualizar)
-        bt_excluir       = findViewById(R.id.bt_excluir)
-        lv_cursos        = findViewById(R.id.lv_cursos)
-        et_filterCodigo  = findViewById(R.id.et_filterCodigo)
-        ib_filterCodigo  = findViewById(R.id.ib_filterCodigo)
-        bt_ordenar       = findViewById(R.id.bt_ordenar)
-        bt_limparFiltros = findViewById(R.id.bt_limparFiltros)
-        tv_totAlunos     = findViewById(R.id.tv_totAlunos)
+        et_codigo         = findViewById(R.id.et_codigo)
+        et_nome           = findViewById(R.id.et_nome)
+        et_nAlunos        = findViewById(R.id.et_nAlunos)
+        et_notaMEC        = findViewById(R.id.et_notaMEC)
+        rg_areas          = findViewById(R.id.rg_areas)
+        bt_inserir        = findViewById(R.id.bt_inserir)
+        bt_atualizar      = findViewById(R.id.bt_atualizar)
+        bt_excluir        = findViewById(R.id.bt_excluir)
+        lv_cursos         = findViewById(R.id.lv_cursos)
+        et_filterCodigo   = findViewById(R.id.et_filterCodigo)
+        ib_filterCodigo   = findViewById(R.id.ib_filterCodigo)
+        bt_ordenar        = findViewById(R.id.bt_ordenar)
+        bt_limparFiltros  = findViewById(R.id.bt_limparFiltros)
+        tv_totAlunos      = findViewById(R.id.tv_totAlunos)
+        bt_criarBackup    = findViewById(R.id.bt_criarBackup)
+        bt_carregarBackup = findViewById(R.id.bt_carregarBackup)
 
         val myDataBase = Banco(applicationContext)
         val dao        = DAO(myDataBase)
@@ -187,6 +195,16 @@ class MainActivity : AppCompatActivity() {
                 , Toast.LENGTH_LONG
             ).show()
         }
+
+        //--------------------------------------------------------------------------------------
+        bt_criarBackup.setOnClickListener {
+            dbBackup(dao)
+        }
+
+        //--------------------------------------------------------------------------------------
+        bt_carregarBackup.setOnClickListener {
+            carregarBackup(dao)
+        }
     }
 
     //--------------------------------------------------------------------------------------
@@ -258,9 +276,8 @@ class MainActivity : AppCompatActivity() {
 
     //--------------------------------------------------------------------------------------
     private fun showCursoById(dao : DAO) {
-        var cursosList = dao.fetchElementById(et_filterCodigo.text.toString().toInt())
-        var adapter =
-            ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, cursosList)
+        var cursosList    = dao.fetchElementById(et_filterCodigo.text.toString().toInt())
+        var adapter       = ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, cursosList)
         lv_cursos.adapter = adapter
 
         et_filterCodigo.text.clear()
@@ -271,5 +288,73 @@ class MainActivity : AppCompatActivity() {
         var cursosList    =  dao.orderByNAlunos()
         var adapter       = ArrayAdapter(applicationContext, android.R.layout.simple_list_item_1, cursosList)
         lv_cursos.adapter = adapter
+    }
+
+    //--------------------------------------------------------------------------------------
+    private fun dbBackup(dao : DAO) {
+        try {
+            val backupFile = File(applicationContext.filesDir, "backup_cursos.txt")
+            val cursos = dao.getAll()
+
+            if (backupFile.exists()) {
+                backupFile.writeText("") // Limpa o conteúdo do arquivo
+            }
+
+            val fileOutputStream = FileOutputStream(backupFile, true)
+
+            for (curso in cursos) {
+                fileOutputStream.write("$curso\n".toByteArray())
+            }
+
+            fileOutputStream.flush()
+            fileOutputStream.close()
+
+            Toast.makeText(
+                applicationContext
+                , "Backup criado com sucesso!"
+                , Toast.LENGTH_LONG
+            ).show()
+        } catch (ex: Exception) {
+            Toast.makeText(
+                applicationContext
+                , "Erro ao criar backup!"
+                , Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    //--------------------------------------------------------------------------------------
+    private fun carregarBackup(dao : DAO) {
+        val backupFile = File(applicationContext.filesDir, "backup_cursos.txt")
+
+        if (backupFile.exists()) {
+            val lines = backupFile.readLines()
+
+            for (line in lines) {
+                val separateData  = line.split(" - ").toTypedArray()
+
+                val codigo  = separateData[0].split(": ")[1].toInt()
+                val nome    = separateData[1].split(": ")[1]
+                val nAlunos = separateData[2].split(": ")[1].toInt()
+                val notaMEC = separateData[3].split(": ")[1].toFloat()
+                val area    = separateData[4].split(": ")[1]
+
+                dao.updateBkp(Curso(codigo, nome, nAlunos, notaMEC, area))
+            }
+
+            showCursos(dao)
+
+            Toast.makeText(
+                applicationContext
+                , "Cursos atualizados com sucesso!"
+                , Toast.LENGTH_LONG
+            ).show()
+        } else {
+            Toast.makeText(
+                applicationContext
+                , "Arquivo de backup não encontrado!"
+                , Toast.LENGTH_LONG
+            ).show()
+        }
     }
  }
