@@ -1,7 +1,6 @@
 package com.iftm
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -16,7 +15,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
-import java.io.FileWriter
 
 class MainActivity : AppCompatActivity() {
 
